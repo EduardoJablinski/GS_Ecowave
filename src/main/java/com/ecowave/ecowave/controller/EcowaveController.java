@@ -2,10 +2,16 @@ package com.ecowave.ecowave.controller;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 
+import com.ecowave.ecowave.model.Localizacao;
+import com.ecowave.ecowave.model.Amigos;
+import com.ecowave.ecowave.service.AmigosService;
+import com.ecowave.ecowave.service.LocalizacaoService;
 import com.ecowave.ecowave.model.Usuario;
-import com.ecowave.ecowave.repository.UsuarioRepository;
 import com.ecowave.ecowave.service.UsuarioService;
+import com.ecowave.ecowave.service.ItensRecicladosService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.HttpStatus;
@@ -13,8 +19,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import com.ecowave.ecowave.model.ItensReciclados;
-import com.ecowave.ecowave.repository.ItensRecicladosRepository;
-
 
 @CrossOrigin(origins = "http://localhost:8081")
 @RestController
@@ -23,9 +27,15 @@ public class EcowaveController {
 
     @Autowired
     private UsuarioService usuarioService;
-    @Qualifier("usuarioRepository")
+
     @Autowired
-    private UsuarioRepository usuarioRepository;
+    private ItensRecicladosService itensRecicladosService;
+
+    @Autowired
+    private AmigosService amigosService;
+
+    @Autowired
+    private LocalizacaoService localizacaoService;
 
     @PostMapping("/registrar")
     public ResponseEntity<String> registrarUsuario(@RequestBody Usuario usuario) {
@@ -43,20 +53,15 @@ public class EcowaveController {
         }
     }
 
-
-    @Autowired
-    ItensRecicladosRepository itensRecicladosRepository;
-
-
     @GetMapping("/item")
     public ResponseEntity<List<ItensReciclados>> getAllItensReciclados(@RequestParam(required = false) String tipoItem) {
         try {
-            List<ItensReciclados> itensReciclados = new ArrayList<ItensReciclados>();
+            List<ItensReciclados> itensReciclados = new ArrayList<>();
 
             if (tipoItem == null)
-                itensRecicladosRepository.findAll().forEach(itensReciclados::add);
+                itensReciclados = itensRecicladosService.findAll();
             else
-                itensRecicladosRepository.findByTipoContaining(tipoItem).forEach(itensReciclados::add);
+                itensReciclados = itensRecicladosService.findByTipoItemContaining(tipoItem);
 
             if (itensReciclados.isEmpty()) {
                 return new ResponseEntity<>(HttpStatus.NO_CONTENT);
@@ -71,17 +76,16 @@ public class EcowaveController {
     @GetMapping("/item/total")
     public ResponseEntity<Long> getTotalItens() {
         try {
-            long totalItens = itensRecicladosRepository.findTotalItens();
+            long totalItens = itensRecicladosService.findTotalQuantidadeItens();
             return new ResponseEntity<>(totalItens, HttpStatus.OK);
         } catch (Exception e) {
             return new ResponseEntity<>(0L, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
-
     @GetMapping("/usuario/{id}/item")
     public ResponseEntity<List<ItensReciclados>> getItensByUsuarioId(@PathVariable("id") long id) {
-        List<ItensReciclados> itensReciclados = itensRecicladosRepository.findByUsuarioId(id);
+        List<ItensReciclados> itensReciclados = itensRecicladosService.findByUsuarioId(id);
         if (itensReciclados.isEmpty()) {
             return new ResponseEntity<>(HttpStatus.NO_CONTENT);
         }
@@ -91,53 +95,57 @@ public class EcowaveController {
     @PostMapping("/usuario/{id}/item")
     public ResponseEntity<String> createItemReciclado(@PathVariable long id, @RequestBody ItensReciclados itensReciclados) {
         try {
-            Usuario usuario = usuarioRepository.findByIdUsuario(id);
-            if (usuario == null) {
-                return new ResponseEntity<>("Usuario com o ID especificado não encontrado.", HttpStatus.NOT_FOUND);
+            Usuario usuario = usuarioService.findByIdUsuario(id);
+            if(usuario == null) {
+                return new ResponseEntity<>("Usuário não encontrado.", HttpStatus.NOT_FOUND);
             }
             itensReciclados.setUsuario(usuario);
-            itensRecicladosRepository.save(new ItensReciclados(itensReciclados.getTipoItem(), itensReciclados.getDataColetaItem(), itensReciclados.getLocalizacaoItem(), itensReciclados.getQuantidadeItem(), itensReciclados.getUsuario()));
+            itensRecicladosService.save(itensReciclados);
             return new ResponseEntity<>("Item Reciclado foi adicionado com sucesso.", HttpStatus.CREATED);
         } catch (Exception e) {
-            return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
+            return new ResponseEntity<>("Erro ao adicionar item reciclado.", HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
     @GetMapping("/usuario/{id}/item/total")
     public ResponseEntity<Long> getTotalItensByUsuarioId(@PathVariable("id") long id) {
-        long totalItens = itensRecicladosRepository.findTotalItensByUsuarioId(id);
-        return new ResponseEntity<>(totalItens, HttpStatus.OK);
+        try {
+            long totalItens = itensRecicladosService.findTotalQuantidadeItensByUsuarioId(id);
+            return new ResponseEntity<>(totalItens, HttpStatus.OK);
+        } catch (Exception e) {
+            return new ResponseEntity<>(0L, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
     }
 
     @PutMapping("/usuario/{id}/item/{itemId}")
     public ResponseEntity<String> updateItemReciclado(@PathVariable long id, @PathVariable long itemId, @RequestBody ItensReciclados updatedItem) {
         try {
-            Usuario usuario = usuarioRepository.findByIdUsuario(id);
-            if (usuario == null) {
-                return new ResponseEntity<>("Usuario com o ID especificado não encontrado.", HttpStatus.NOT_FOUND);
+            ItensReciclados existingItem = itensRecicladosService.findById(itemId);
+            if (existingItem == null) {
+                return new ResponseEntity<>("Item Reciclado não encontrado.", HttpStatus.NOT_FOUND);
             }
 
-            ItensReciclados itemExistente = itensRecicladosRepository.findById(itemId);
-            if (itemExistente == null) {
-                return new ResponseEntity<>("Item com o ID especificado não encontrado.", HttpStatus.NOT_FOUND);
+            if (existingItem.getUsuario().getIdUsuario() != id) {
+                return new ResponseEntity<>("Não autorizado a atualizar este item.", HttpStatus.UNAUTHORIZED);
             }
 
-            itemExistente.setTipoItem(updatedItem.getTipoItem());
-            itemExistente.setDataColetaItem(updatedItem.getDataColetaItem());
-            itemExistente.setLocalizacaoItem(updatedItem.getLocalizacaoItem());
-            itemExistente.setQuantidadeItem(updatedItem.getQuantidadeItem());
+            existingItem.setTipoItem(updatedItem.getTipoItem());
+            existingItem.setLocalizacaoItem(updatedItem.getLocalizacaoItem());
+            existingItem.setQuantidadeItem(updatedItem.getQuantidadeItem());
 
-            itensRecicladosRepository.save(itemExistente);
+            itensRecicladosService.save(existingItem);
+
             return new ResponseEntity<>("Item Reciclado foi atualizado com sucesso.", HttpStatus.OK);
         } catch (Exception e) {
             return new ResponseEntity<>("Erro ao atualizar o item reciclado.", HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
+
     @GetMapping("/usuario/{id}/item/{itemId}")
     public ResponseEntity<ItensReciclados> getItemByUsuarioIdAndItemId(@PathVariable("id") long id, @PathVariable("itemId") long itemId) {
         try {
-            ItensReciclados item = itensRecicladosRepository.findById(itemId);
+            ItensReciclados item = itensRecicladosService.findById(itemId);
 
             if (item == null) {
                 return new ResponseEntity<>(HttpStatus.NOT_FOUND);
@@ -153,6 +161,88 @@ public class EcowaveController {
         }
     }
 
+    @DeleteMapping("/usuario/{id}/item/{itemId}")
+    public ResponseEntity<String> deleteItemByUsuarioIdAndItemId(@PathVariable("id") long id, @PathVariable("itemId") long itemId) {
+        try {
+            itensRecicladosService.deleteById(itemId);
+            return new ResponseEntity<>("Item removido com sucesso.", HttpStatus.OK);
+        } catch (Exception e) {
+            return new ResponseEntity<>("Erro ao remover o item.", HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
 
+    @PostMapping("/usuario/{id}/amigos")
+    public ResponseEntity<String> adicionarAmigo(@PathVariable("id") Long idUsuario, @RequestBody Map<String, Long> payload) {
+        try {
+            Long idAmigo = payload.get("idAmigo");
+            if (idAmigo == null) {
+                return new ResponseEntity<>("idAmigo é necessário", HttpStatus.BAD_REQUEST);
+            }
+            if (idUsuario.equals(idAmigo)) {
+                return new ResponseEntity<>("Um usuário não pode adicionar a si mesmo como amigo.", HttpStatus.BAD_REQUEST);
+            }
+            amigosService.adicionarAmigo(idUsuario, idAmigo);
+            return new ResponseEntity<>("Amigo adicionado com sucesso.", HttpStatus.CREATED);
+        } catch (Exception e) {
+            return new ResponseEntity<>("Erro ao adicionar amigo.", HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+
+    @GetMapping("/usuario/{id}/amigos")
+    public ResponseEntity<List<Amigos>> obterAmigos(@PathVariable("id") Long idUsuario) {
+        try {
+            List<Amigos> amigos = amigosService.obterAmigos(idUsuario);
+            if (amigos.isEmpty()) {
+                return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+            }
+            return new ResponseEntity<>(amigos, HttpStatus.OK);
+        } catch (Exception e) {
+            return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+
+    }
+
+    @DeleteMapping("/usuario/{id}/amigos/{idAmigo}")
+    public ResponseEntity<String> removerAmigo(@PathVariable("id") Long idUsuario, @PathVariable("idAmigo") Long idAmigo) {
+        try {
+            amigosService.removerAmigo(idUsuario, idAmigo);
+            return new ResponseEntity<>("Amigo removido com sucesso.", HttpStatus.OK);
+        } catch (Exception e) {
+            return new ResponseEntity<>("Erro ao remover amigo.", HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    @PostMapping("/localizacoes")
+    public ResponseEntity<Localizacao> criarLocalizacao(@RequestBody Localizacao localizacao) {
+        try {
+            Localizacao novaLocalizacao = localizacaoService.salvarLocalizacao(localizacao);
+            return new ResponseEntity<>(novaLocalizacao, HttpStatus.CREATED);
+        } catch (Exception e) {
+            return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    @GetMapping("/localizacoes")
+    public ResponseEntity<List<Localizacao>> obterTodasLocalizacoes() {
+        try {
+            List<Localizacao> localizacoes = localizacaoService.obterTodasLocalizacoes();
+            if (localizacoes.isEmpty()) {
+                return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+            }
+            return new ResponseEntity<>(localizacoes, HttpStatus.OK);
+        } catch (Exception e) {
+            return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    @GetMapping("/localizacoes/{id}")
+    public ResponseEntity<Localizacao> obterLocalizacaoPorId(@PathVariable("id") Long id) {
+        Optional<Localizacao> localizacao = localizacaoService.obterLocalizacaoPorId(id);
+        return localizacao.map(value -> new ResponseEntity<>(value, HttpStatus.OK))
+                .orElseGet(() -> new ResponseEntity<>(HttpStatus.NOT_FOUND));
+    }
 }
+
+
 

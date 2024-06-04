@@ -1,10 +1,9 @@
 package com.ecowave.ecowave.repository;
 
-import com.ecowave.ecowave.model.Usuario;
+import com.ecowave.ecowave.model.Localizacao;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 @Repository
-public interface UsuarioRepository extends JpaRepository<Usuario, Long> {
-    Usuario findByNomeUsuario(String nomeUsuario);
+public interface LocalizacaoRepository extends JpaRepository<Localizacao, Long> {
 }

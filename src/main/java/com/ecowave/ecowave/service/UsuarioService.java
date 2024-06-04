@@ -1,7 +1,7 @@
 package com.ecowave.ecowave.service;
 
-import com.ecowave.ecowave.repository.UsuarioRepository;
 import com.ecowave.ecowave.model.Usuario;
+import com.ecowave.ecowave.repository.UsuarioRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -33,4 +33,9 @@ public class UsuarioService {
         }
         return false;
     }
+
+    public Usuario findByIdUsuario(Long idUsuario) {
+        return usuarioRepository.findById(idUsuario).orElse(null);
+    }
+
 }

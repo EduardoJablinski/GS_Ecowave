@@ -1,21 +1,15 @@
 package com.ecowave.ecowave.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
-import javax.persistence.Id;
-import javax.persistence.JoinColumn;
-import javax.persistence.ManyToOne;
-import javax.persistence.Table;
+import javax.persistence.*;
 import java.util.Date;
 
 @Entity
-@Table(name = "ItensReciclados")
+@Table(name = "ITENSRECICLADOS")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -23,31 +17,25 @@ public class ItensReciclados {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "ID_ITEM")
+    @Column(name = "id_item")
     private long idItem;
 
-    @Column(name = "TIPO_ITEM")
+    @Column(name = "tipo_item")
     private String tipoItem;
 
-    @Column(name = "DATA_COLETA_ITEM")
+    @Column(name = "data_coleta_item")
     private Date dataColetaItem;
 
-    @Column(name = "LOCALIZACAO_ITEM")
+    @Column(name = "localizacao_item")
     private String localizacaoItem;
 
-    @Column(name = "QUANTIDADE_ITEM")
-    private Number quantidadeItem;
+    @Column(name = "quantidade_item")
+    private int quantidadeItem;
 
-    @ManyToOne
-    @JoinColumn(name = "ID_USUARIO")
+    @JsonIgnore
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "id_usuario")
     private Usuario usuario;
 
-    public ItensReciclados(String tipoItem, Date dataColetaItem, String localizacaoItem, Number quantidadeItem, Usuario usuario) {
-        this.tipoItem = tipoItem;
-        this.dataColetaItem = dataColetaItem;
-        this.localizacaoItem = localizacaoItem;
-        this.quantidadeItem = quantidadeItem;
-        this.usuario = usuario;
-    }
-
+    // Constructors, getters, setters
 }

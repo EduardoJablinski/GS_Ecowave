@@ -1,25 +1,17 @@
 package com.ecowave.ecowave.repository;
 
 import com.ecowave.ecowave.model.ItensReciclados;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
+
 import java.util.List;
 
-public interface ItensRecicladosRepository {
-    int save(ItensReciclados book);
+@Repository
+public interface ItensRecicladosRepository extends JpaRepository<ItensReciclados, Long> {
+    List<ItensReciclados> findByUsuario_IdUsuario(long idUsuario);
 
-    ItensReciclados findById(long idItem);
+    List<ItensReciclados> findByTipoItemContaining(String tipoItem);
 
-    int deleteById(long idItem);
-
-    List<ItensReciclados> findByUsuarioId(long idUsuario);
-
-    List<ItensReciclados> findAll();
-
-    int deleteAll();
-
-    List<ItensReciclados> findByTipoContaining(String tipoItem);
-
-    long findTotalItensByUsuarioId(long idUsuario);
-
-    long findTotalItens();
+    long countByUsuario_IdUsuario(long idUsuario);
 
 }
