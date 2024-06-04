@@ -1,11 +1,14 @@
 package com.ecowave.ecowave.model;
 
+import com.ecowave.ecowave.model.Usuario;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import javax.persistence.*;
+import javax.validation.constraints.NotEmpty;
+import javax.validation.constraints.NotNull;
 import java.util.Date;
 
 @Entity
@@ -21,6 +24,7 @@ public class ItensReciclados {
     private long idItem;
 
     @Column(name = "tipo_item")
+    @NotEmpty(message = "O tipo do item não pode estar vazio")
     private String tipoItem;
 
     @Column(name = "data_coleta_item")
@@ -30,6 +34,7 @@ public class ItensReciclados {
     private String localizacaoItem;
 
     @Column(name = "quantidade_item")
+    @NotNull(message = "A quantidade do item não pode ser nula")
     private int quantidadeItem;
 
     @JsonIgnore

@@ -10,8 +10,13 @@ import org.springframework.data.repository.query.Param;
 import javax.transaction.Transactional;
 import java.util.List;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+
 public interface AmigosRepository extends JpaRepository<Amigos, AmigosId> {
     List<Amigos> findByIdUsuario(Long idUsuario);
+
+    Page<Amigos> findByIdUsuario(Long idUsuario, Pageable pageable);
 
     @Modifying
     @Transactional

@@ -14,14 +14,20 @@ import com.ecowave.ecowave.service.UsuarioService;
 import com.ecowave.ecowave.service.ItensRecicladosService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import com.ecowave.ecowave.model.ItensReciclados;
 
+import javax.validation.Valid;
+
 @CrossOrigin(origins = "http://localhost:8081")
 @RestController
+@Validated
 @RequestMapping("/api")
 public class EcowaveController {
 
@@ -38,7 +44,7 @@ public class EcowaveController {
     private LocalizacaoService localizacaoService;
 
     @PostMapping("/registrar")
-    public ResponseEntity<String> registrarUsuario(@RequestBody Usuario usuario) {
+    public ResponseEntity<String> registrarUsuario(@Valid @RequestBody Usuario usuario) {
         usuarioService.registrarUsuario(usuario);
         return new ResponseEntity<>("Usuário registrado com sucesso.", HttpStatus.CREATED);
     }
@@ -54,20 +60,22 @@ public class EcowaveController {
     }
 
     @GetMapping("/item")
-    public ResponseEntity<List<ItensReciclados>> getAllItensReciclados(@RequestParam(required = false) String tipoItem) {
+    public ResponseEntity<Page<ItensReciclados>> getAllItensReciclados(@RequestParam(required = false) String tipoItem,
+                                                                       @RequestParam(defaultValue = "0") int page,
+                                                                       @RequestParam(defaultValue = "10") int size) {
         try {
-            List<ItensReciclados> itensReciclados = new ArrayList<>();
+            Page<ItensReciclados> itensRecicladosPage;
 
             if (tipoItem == null)
-                itensReciclados = itensRecicladosService.findAll();
+                itensRecicladosPage = itensRecicladosService.findAllPaginado(page, size);
             else
-                itensReciclados = itensRecicladosService.findByTipoItemContaining(tipoItem);
+                itensRecicladosPage = itensRecicladosService.findByTipoItemContainingPaginado(tipoItem, page, size);
 
-            if (itensReciclados.isEmpty()) {
+            if (itensRecicladosPage.isEmpty()) {
                 return new ResponseEntity<>(HttpStatus.NO_CONTENT);
             }
 
-            return new ResponseEntity<>(itensReciclados, HttpStatus.OK);
+            return new ResponseEntity<>(itensRecicladosPage, HttpStatus.OK);
         } catch (Exception e) {
             return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
         }
@@ -83,13 +91,33 @@ public class EcowaveController {
         }
     }
 
-    @GetMapping("/usuario/{id}/item")
-    public ResponseEntity<List<ItensReciclados>> getItensByUsuarioId(@PathVariable("id") long id) {
-        List<ItensReciclados> itensReciclados = itensRecicladosService.findByUsuarioId(id);
-        if (itensReciclados.isEmpty()) {
-            return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+    @GetMapping("/usuarios")
+    public ResponseEntity<Page<Usuario>> obterTodosUsuariosPaginado(@RequestParam(defaultValue = "0") int page,
+                                                                    @RequestParam(defaultValue = "10") int size) {
+        try {
+            Page<Usuario> usuariosPage = usuarioService.obterTodosUsuariosPaginado(PageRequest.of(page, size));
+            if (usuariosPage.isEmpty()) {
+                return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+            }
+            return new ResponseEntity<>(usuariosPage, HttpStatus.OK);
+        } catch (Exception e) {
+            return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
         }
-        return new ResponseEntity<>(itensReciclados, HttpStatus.OK);
+    }
+
+    @GetMapping("/usuario/{id}/item")
+    public ResponseEntity<Page<ItensReciclados>> getItensByUsuarioId(@PathVariable("id") long id,
+                                                                     @RequestParam(defaultValue = "0") int page,
+                                                                     @RequestParam(defaultValue = "10") int size) {
+        try {
+            Page<ItensReciclados> itensRecicladosPage = itensRecicladosService.findByUsuarioIdPaginado(id, page, size);
+            if (itensRecicladosPage.isEmpty()) {
+                return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+            }
+            return new ResponseEntity<>(itensRecicladosPage, HttpStatus.OK);
+        } catch (Exception e) {
+            return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
     }
 
     @PostMapping("/usuario/{id}/item")
@@ -141,7 +169,6 @@ public class EcowaveController {
         }
     }
 
-
     @GetMapping("/usuario/{id}/item/{itemId}")
     public ResponseEntity<ItensReciclados> getItemByUsuarioIdAndItemId(@PathVariable("id") long id, @PathVariable("itemId") long itemId) {
         try {
@@ -188,7 +215,6 @@ public class EcowaveController {
         }
     }
 
-
     @GetMapping("/usuario/{id}/amigos")
     public ResponseEntity<List<Amigos>> obterAmigos(@PathVariable("id") Long idUsuario) {
         try {
@@ -224,13 +250,14 @@ public class EcowaveController {
     }
 
     @GetMapping("/localizacoes")
-    public ResponseEntity<List<Localizacao>> obterTodasLocalizacoes() {
+    public ResponseEntity<Page<Localizacao>> obterTodasLocalizacoesPaginado(@RequestParam(defaultValue = "0") int page,
+                                                                            @RequestParam(defaultValue = "10") int size) {
         try {
-            List<Localizacao> localizacoes = localizacaoService.obterTodasLocalizacoes();
-            if (localizacoes.isEmpty()) {
+            Page<Localizacao> localizacoesPage = localizacaoService.obterTodasLocalizacoesPaginado(PageRequest.of(page, size));
+            if (localizacoesPage.isEmpty()) {
                 return new ResponseEntity<>(HttpStatus.NO_CONTENT);
             }
-            return new ResponseEntity<>(localizacoes, HttpStatus.OK);
+            return new ResponseEntity<>(localizacoesPage, HttpStatus.OK);
         } catch (Exception e) {
             return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
         }

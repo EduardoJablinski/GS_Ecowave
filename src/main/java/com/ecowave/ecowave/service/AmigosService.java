@@ -3,6 +3,8 @@ package com.ecowave.ecowave.service;
 import com.ecowave.ecowave.model.Amigos;
 import com.ecowave.ecowave.repository.AmigosRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -12,6 +14,13 @@ public class AmigosService {
 
     @Autowired
     private AmigosRepository amigosRepository;
+
+
+    public Page<Amigos> obterAmigosPaginado(Long idUsuario, int page, int size) {
+        PageRequest pageRequest = PageRequest.of(page, size);
+        return amigosRepository.findByIdUsuario(idUsuario, pageRequest);
+    }
+
 
     public void adicionarAmigo(Long idUsuario, Long idAmigo) {
         Amigos amizade = new Amigos();

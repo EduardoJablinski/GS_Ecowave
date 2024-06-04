@@ -1,18 +1,18 @@
 package com.ecowave.ecowave.service;
 
-import com.ecowave.ecowave.model.ItensReciclados;
-import com.ecowave.ecowave.repository.ItensRecicladosRepository;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
+import com.ecowave.ecowave.model.ItensReciclados;
+import com.ecowave.ecowave.repository.ItensRecicladosRepository;
 
 @Service
 public class ItensRecicladosService {
 
     private final ItensRecicladosRepository itensRecicladosRepository;
 
-    @Autowired
     public ItensRecicladosService(ItensRecicladosRepository itensRecicladosRepository) {
         this.itensRecicladosRepository = itensRecicladosRepository;
     }
@@ -34,43 +34,41 @@ public class ItensRecicladosService {
         }
     }
 
-    public List<ItensReciclados> findByUsuarioId(long idUsuario) {
-        return itensRecicladosRepository.findByUsuario_IdUsuario(idUsuario);
+    public Page<ItensReciclados> findByUsuarioIdPaginado(long idUsuario, int page, int size) {
+        Pageable pageable = PageRequest.of(page, size);
+        return itensRecicladosRepository.findByUsuario_IdUsuario(idUsuario, pageable);
     }
 
-    public List<ItensReciclados> findAll() {
-        return itensRecicladosRepository.findAll();
-    }
 
-    public List<ItensReciclados> findByTipoItemContaining(String tipoItem) {
-        return itensRecicladosRepository.findByTipoItemContaining(tipoItem);
+    public Page<ItensReciclados> findByTipoItemContainingPaginado(String tipoItem, int page, int size) {
+        Pageable pageable = PageRequest.of(page, size);
+        return itensRecicladosRepository.findByTipoItemContaining(tipoItem, pageable);
     }
 
     public long findTotalItensByUsuarioId(long idUsuario) {
         return itensRecicladosRepository.countByUsuario_IdUsuario(idUsuario);
     }
 
+
+
     public long findTotalItens() {
         return itensRecicladosRepository.count();
     }
 
     public long findTotalQuantidadeItens() {
-        List<ItensReciclados> itensReciclados = itensRecicladosRepository.findAll();
-        long total = 0;
-        for (ItensReciclados item : itensReciclados) {
-            total += item.getQuantidadeItem();
-        }
-        return total;
+        return itensRecicladosRepository.findAll()
+                .stream()
+                .mapToLong(ItensReciclados::getQuantidadeItem)
+                .sum();
     }
 
     public long findTotalQuantidadeItensByUsuarioId(long idUsuario) {
-        List<ItensReciclados> itensReciclados = itensRecicladosRepository.findByUsuario_IdUsuario(idUsuario);
-        long total = 0;
-        for (ItensReciclados item : itensReciclados) {
-            total += item.getQuantidadeItem();
-        }
-        return total;
+        return itensRecicladosRepository.countByUsuario_IdUsuario(idUsuario);
     }
 
+    public Page<ItensReciclados> findAllPaginado(int page, int size) {
+        Pageable pageable = PageRequest.of(page, size);
+        return itensRecicladosRepository.findAll(pageable);
+    }
 
 }

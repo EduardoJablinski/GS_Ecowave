@@ -1,17 +1,15 @@
 package com.ecowave.ecowave.repository;
 
-import com.ecowave.ecowave.model.ItensReciclados;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
-import java.util.List;
+import com.ecowave.ecowave.model.ItensReciclados;
 
 @Repository
 public interface ItensRecicladosRepository extends JpaRepository<ItensReciclados, Long> {
-    List<ItensReciclados> findByUsuario_IdUsuario(long idUsuario);
-
-    List<ItensReciclados> findByTipoItemContaining(String tipoItem);
-
+    Page<ItensReciclados> findByUsuario_IdUsuario(long idUsuario, Pageable pageable);
+    Page<ItensReciclados> findByTipoItemContaining(String tipoItem, Pageable pageable);
     long countByUsuario_IdUsuario(long idUsuario);
-
 }

@@ -5,6 +5,8 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import javax.persistence.*;
+import javax.validation.constraints.NotEmpty;
+import javax.validation.constraints.NotNull;
 
 @Entity
 @Table(name = "Localizacoes")
@@ -19,6 +21,7 @@ public class Localizacao {
     private Long idLocalizacao;
 
     @Column(name = "nome_localizacao", nullable = false)
+    @NotEmpty(message = "O nome da localização não pode estar vazio")
     private String nomeLocalizacao;
 
     @Column(name = "latitude")
